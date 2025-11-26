@@ -1,7 +1,7 @@
 package controllers;
 
-import dao.UsersDAO; // Import package dao
-import models.User;  // Import model Users
+import dao.UsersDAO;
+import models.User;
 import java.io.IOException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -13,36 +13,45 @@ import jakarta.servlet.http.HttpSession;
 @WebServlet(name = "LoginServlet", urlPatterns = {"/login"})
 public class LoginServlet extends HttpServlet {
 
-@Override
-protected void doGet(HttpServletRequest request, HttpServletResponse response)
-        throws ServletException, IOException {
-    // Sửa đường dẫn trỏ đúng vào nơi bạn để file jsp
-    request.getRequestDispatcher("/WEB-INF/views/users/login.jsp").forward(request, response);
-}
+    // 1. Mở form đăng nhập
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        // Đường dẫn này phải CHÍNH XÁC với nơi bạn để file login.jsp trong WEB-INF
+        request.getRequestDispatcher("/WEB-INF/views/users/login.jsp").forward(request, response);
+    }
 
+    // 2. Xử lý đăng nhập khi bấm nút
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
+            // Lấy dữ liệu từ form (name="user" và name="pass")
             String u = request.getParameter("user");
             String p = request.getParameter("pass");
 
-            UsersDAO dao = new UsersDAO(); // Khởi tạo UsersDAO
-            User account = dao.login(u, p); // Trả về đối tượng Users
+            // Gọi DAO kiểm tra trong Database
+            UsersDAO dao = new UsersDAO();
+            User account = dao.login(u, p);
 
             if (account == null) {
+                // TRƯỜNG HỢP SAI:
                 request.setAttribute("mess", "Tài khoản hoặc mật khẩu sai rồi!");
-                request.getRequestDispatcher("Login.jsp").forward(request, response);
+                // Quay lại đúng cái đường dẫn như hàm doGet để báo lỗi
+                request.getRequestDispatcher("/WEB-INF/views/users/login.jsp").forward(request, response);
             } else {
+                // TRƯỜNG HỢP ĐÚNG:
                 HttpSession session = request.getSession();
-                session.setAttribute("acc", account);
-                session.setMaxInactiveInterval(1800);
+                session.setAttribute("acc", account); // Lưu đối tượng 'account' vào session
+                session.setMaxInactiveInterval(1800); // Session sống 30 phút
 
                 // Check quyền admin
                 if(account.getIsAdmin() == 1) {
-                    response.sendRedirect("Admin.jsp");
+                    // Nếu là Admin thì chuyển sang trang quản lý
+                    response.sendRedirect("Admin.jsp"); 
                 } else {
-                    response.sendRedirect("Home.jsp");
+                    // Nếu là khách thì chuyển sang Servlet Home (đường dẫn /home)
+                    response.sendRedirect("home"); 
                 }
             }
         } catch (Exception e) {
